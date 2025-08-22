@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+:root {
+  --mac-bg: linear-gradient(135deg, #f5f6fa 0%, #e9ecf5 100%);
+  --mac-accent: #007aff;
+  --mac-accent-dark: #0051a8;
+  --mac-shadow: 0 4px 24px 0 rgba(0,0,0,0.08), 0 1.5px 4px 0 rgba(0,0,0,0.04);
+  --mac-font: 'San Francisco', 'SF Pro Display', 'Segoe UI', 'Arial', sans-serif;
+}
+
+.bg-mac-bg {
+  background: var(--mac-bg);
+}
+.bg-mac-accent {
+  background-color: var(--mac-accent);
+  color: #fff;
+}
+.bg-mac-accent-dark {
+  background-color: var(--mac-accent-dark);
+  color: #fff;
+}
+.text-mac-accent {
+  color: var(--mac-accent);
+}
+.shadow-mac {
+  box-shadow: var(--mac-shadow);
+}
+.font-mac {
+  font-family: var(--mac-font);
+}
+
+/* Glassmorphism effect */
+.backdrop-blur-md {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* Rounded corners for macOS look */
+.rounded-xl {
+  border-radius: 1rem;
+}
+.rounded-2xl {
+  border-radius: 1.5rem;
+}
+
+/* Chatbot HTML content styling */
+.chat-html-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+
+.chat-html-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.chat-html-content strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.chat-html-content em {
+  font-style: italic;
+  color: #6b7280;
+}
+
+.chat-html-content br {
+  margin-bottom: 0.5rem;
+}
+
+

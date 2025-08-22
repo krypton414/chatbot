@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: anonivate-chatbot-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://anonivate-chatbot.onrender.com
+      - key: NODE_VERSION
+        value: 18
+      - key: GENERATE_SOURCEMAP
+        value: false
