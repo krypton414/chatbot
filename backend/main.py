@@ -349,7 +349,6 @@ If you can answer the user's question using the website content below, do so. If
 {website_content[:1000]}...
 
 Example format:
-<<<<<<< HEAD
 <h2><strong>Response Title</strong></h2>
 <p>Your response paragraph here.</p>
 <p>1. <strong>First point</strong> - explanation</p>
@@ -357,20 +356,20 @@ Example format:
 
 User's question: {chat_message.message}"""
                 
-                response = await get_openai_response(fallback_prompt, enhanced_user_message, memory_context)
-                
-                # Add to memory
-                add_to_memory(session_id, user_message, response)
-                
-                # Convert any remaining markdown to HTML
-                response = convert_markdown_to_html(response)
-                
-                # IMPROVEMENT: Add a clear fallback message before the ChatGPT answer
-                response = "<p><em>I couldn't find this information on the website, but here is what I know:</em></p><br>" + response
-                return ChatResponse(
-                    response=response,
-                    memory_summary=memory_context
-                )
+            response = await get_openai_response(system_prompt, enhanced_user_message, memory_context)
+            
+            # Add to memory
+            add_to_memory(session_id, user_message, response)
+            
+            # Convert any remaining markdown to HTML
+            response = convert_markdown_to_html(response)
+            
+            # IMPROVEMENT: Add a clear fallback message before the ChatGPT answer
+            response = "<p><em>I couldn't find this information on the website, but here is what I know:</em></p><br>" + response
+            return ChatResponse(
+                response=response,
+                memory_summary=memory_context
+            )
             
             # Check if the question is related to the website content
             # If it's a general knowledge question, fall back to AI
@@ -485,10 +484,6 @@ Answer questions clearly and concisely. You MUST use HTML formatting as specifie
 Example format:
 <h2><strong>Your Answer Title</strong></h2>
 <p>Your first paragraph here.</p>
-=======
-<h2><strong>Website/General Answer Title</strong></h2>
-<p>Your answer paragraph here.</p>
->>>>>>> c854c2ec (Update: Improved ChatGPT-style fallback and greeting responses)
 <p>1. <strong>First point</strong> - explanation</p>
 <p>2. <strong>Second point</strong> - explanation</p>
 <p><em>Important note</em> about the topic.</p>"""
