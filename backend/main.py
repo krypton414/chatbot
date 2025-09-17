@@ -342,6 +342,8 @@ User's question: {chat_message.message}"""
                 # Convert any remaining markdown to HTML
                 response = convert_markdown_to_html(response)
                 
+                # IMPROVEMENT: Add a clear fallback message before the ChatGPT answer
+                response = "<p><em>I couldn't find this information on the website, but here is what I know:</em></p><br>" + response
                 return ChatResponse(
                     response=response,
                     memory_summary=memory_context
