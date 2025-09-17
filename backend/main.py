@@ -257,6 +257,27 @@ async def chat_endpoint(chat_message: ChatMessage, website_url: str = Query(None
     try:
         user_message = chat_message.message
         mode = detect_mode(chat_message.message)
+
+        # Custom greeting response for 'How are you?' and similar
+        greeting_patterns = [
+            r"^how are you[\?!. ]*$",
+            r"^how are you doing[\?!. ]*$",
+            r"^how r u[\?!. ]*$",
+            r"^how do you feel[\?!. ]*$",
+            r"^what's up[\?!. ]*$",
+            r"^sup[\?!. ]*$",
+            r"^are you okay[\?!. ]*$",
+            r"^are you fine[\?!. ]*$",
+            r"^are you good[\?!. ]*$",
+        ]
+        import re
+        if any(re.match(pat, user_message.strip().lower()) for pat in greeting_patterns):
+            chatgpt_style_greeting = (
+                "<h2><strong>How am I?</strong></h2>"
+                "<p>I don't have feelings, but I'm ready and working fine — here to help! 🙂 How are <em>you</em> doing?</p>"
+            )
+            add_to_memory(chat_message.session_id or "default_session", user_message, chatgpt_style_greeting)
+            return ChatResponse(response=chatgpt_style_greeting)
         
         # Generate session ID if not provided
         session_id = chat_message.session_id or "default_session"
@@ -295,11 +316,9 @@ async def chat_endpoint(chat_message: ChatMessage, website_url: str = Query(None
         
         # If website URL is provided, analyze the website FIRST (PRIORITY)
         if target_website:
-            # Allow any website for now (can be restricted later)
             website_content = scrape_multiple_pages(target_website, max_pages=5)
-            if not website_content:
-                # Fallback to AI response when scraping fails
-                fallback_prompt = f"""🤖 You are a helpful AI assistant. The user is asking about a website ({target_website}) but I couldn't access its content. 
+            # Always use OpenAI to answer, even if website_content is empty or scraping fails
+            system_prompt = f"""🤖 You are a helpful AI assistant. The user is asking about a website ({target_website}).
 
 👤 **USER INFORMATION - USE THIS INFORMATION:**
 {user_context}
@@ -307,8 +326,8 @@ async def chat_endpoint(chat_message: ChatMessage, website_url: str = Query(None
 💡 **CRITICAL INSTRUCTIONS - YOU MUST FOLLOW THESE:**
 1. The user's name is: {chat_message.user_name or 'not provided'}
 2. The user's email is: {chat_message.user_email or 'not provided'}
-3. When the user asks "what is my name?" or "tell me my name", you MUST respond with their actual name: {chat_message.user_name or 'not provided'}
-4. When the user asks "what is my email?" or "tell me my email", you MUST respond with their actual email: {chat_message.user_email or 'not provided'}
+3. When the user asks 'what is my name?' or 'tell me my name', you MUST respond with their actual name: {chat_message.user_name or 'not provided'}
+4. When the user asks 'what is my email?' or 'tell me my email', you MUST respond with their actual email: {chat_message.user_email or 'not provided'}
 5. NEVER say you don't have access to this information - you DO have it above
 
 📋 **CRITICAL FORMATTING RULES - YOU MUST FOLLOW THESE EXACTLY:**
@@ -324,9 +343,13 @@ async def chat_endpoint(chat_message: ChatMessage, website_url: str = Query(None
 • NEVER skip HTML tags - they are REQUIRED
 
 💡 **INSTRUCTIONS:**
-Provide a helpful response based on your general knowledge. You MUST use HTML formatting as specified above. NEVER use markdown. If they're asking about the website specifically, explain that you can't access that website's content right now, but you'd be happy to help with general questions.
+If you can answer the user's question using the website content below, do so. If not, answer in your own words using your general knowledge, just like ChatGPT. Be helpful, friendly, and conversational.
+
+🌐 **WEBSITE CONTENT TO ANALYZE:**
+{website_content[:1000]}...
 
 Example format:
+<<<<<<< HEAD
 <h2><strong>Response Title</strong></h2>
 <p>Your response paragraph here.</p>
 <p>1. <strong>First point</strong> - explanation</p>
@@ -462,116 +485,16 @@ Answer questions clearly and concisely. You MUST use HTML formatting as specifie
 Example format:
 <h2><strong>Your Answer Title</strong></h2>
 <p>Your first paragraph here.</p>
+=======
+<h2><strong>Website/General Answer Title</strong></h2>
+<p>Your answer paragraph here.</p>
+>>>>>>> c854c2ec (Update: Improved ChatGPT-style fallback and greeting responses)
 <p>1. <strong>First point</strong> - explanation</p>
 <p>2. <strong>Second point</strong> - explanation</p>
 <p><em>Important note</em> about the topic.</p>"""
-                
-                response = await get_openai_response(system_prompt, enhanced_user_message, memory_context)
-                
-                # Add to memory
-                add_to_memory(session_id, user_message, response)
-                
-                # Convert any remaining markdown to HTML
-                response = convert_markdown_to_html(response)
-                
-                return ChatResponse(
-                    response=response,
-                    memory_summary=memory_context
-                )
-            
-            # Choose system prompt based on mode for website-specific questions
-            if mode == "design":
-                system_prompt = f"""🎨 You are an expert UI/UX and branding consultant. 
-
-📋 **CRITICAL FORMATTING RULES - YOU MUST FOLLOW THESE EXACTLY:**
-• NEVER use markdown syntax like ** or * or bullet points
-• NEVER use bullet points (•) or asterisks (*) for lists
-• ALWAYS use proper HTML tags ONLY
-• ALWAYS start with <h2><strong>Main Heading</strong></h2>
-• ALWAYS wrap paragraphs in <p> tags with proper spacing
-• ALWAYS use numbered lists (1. 2. 3.) wrapped in <p> tags
-• ALWAYS use <em> tags for emphasis on important words
-• ALWAYS use <strong> tags for key terms and concepts
-• ALWAYS add <br><br> between sections for proper spacing
-• NEVER skip HTML tags - they are REQUIRED
-
-🌐 **WEBSITE CONTENT TO ANALYZE:**
-{website_content[:1000]}...
-
-💡 **INSTRUCTIONS:**
-Answer the user's question based on the website content above. You MUST use HTML formatting as specified above. NEVER use markdown.
-
-Example format:
-<h2><strong>Website Analysis Title</strong></h2>
-<p>Your analysis paragraph here.</p>
-<p>1. <strong>First finding</strong> - explanation</p>
-<p>2. <strong>Second finding</strong> - explanation</p>
-<p><em>Important note</em> about the website.</p>"""
-            elif mode == "development":
-                system_prompt = f"""💻 You are a senior web developer and technical expert. 
-
-📋 **CRITICAL FORMATTING RULES - YOU MUST FOLLOW THESE EXACTLY:**
-• NEVER use markdown syntax like ** or * or bullet points
-• NEVER use bullet points (•) or asterisks (*) for lists
-• ALWAYS use proper HTML tags ONLY
-• ALWAYS start with <h2><strong>Main Heading</strong></h2>
-• ALWAYS wrap paragraphs in <p> tags with proper spacing
-• ALWAYS use numbered lists (1. 2. 3.) wrapped in <p> tags
-• ALWAYS use <em> tags for emphasis on important words
-• ALWAYS use <strong> tags for key terms and concepts
-• ALWAYS add <br><br> between sections for proper spacing
-• NEVER skip HTML tags - they are REQUIRED
-
-🌐 **WEBSITE CONTENT TO ANALYZE:**
-{website_content[:1000]}...
-
-💡 **INSTRUCTIONS:**
-Answer the user's question based on the website content above. You MUST use HTML formatting as specified above. NEVER use markdown.
-
-Example format:
-<h2><strong>Website Analysis Title</strong></h2>
-<p>Your analysis paragraph here.</p>
-<p>1. <strong>First finding</strong> - explanation</p>
-<p>2. <strong>Second finding</strong> - explanation</p>
-<p><em>Important note</em> about the website.</p>"""
-            else:
-                system_prompt = f"""🤖 You are a helpful AI assistant that analyzes website content. 
-
-📋 **CRITICAL FORMATTING RULES - YOU MUST FOLLOW THESE EXACTLY:**
-• NEVER use markdown syntax like ** or * or bullet points
-• NEVER use bullet points (•) or asterisks (*) for lists
-• NEVER use **text** or *text* - ONLY use <strong>text</strong> and <em>text</em>
-• NEVER use - or * for lists - ONLY use numbered lists (1. 2. 3.)
-• ALWAYS use proper HTML tags ONLY
-• ALWAYS start with <h2><strong>Main Heading</strong></h2>
-• ALWAYS wrap paragraphs in <p> tags with proper spacing
-• ALWAYS use numbered lists (1. 2. 3.) wrapped in <p> tags
-• ALWAYS use <em> tags for emphasis on important words
-• ALWAYS use <strong> tags for key terms and concepts
-• ALWAYS add <br><br> between sections for proper spacing
-• NEVER skip HTML tags - they are REQUIRED
-
-🌐 **WEBSITE CONTENT TO ANALYZE:**
-{website_content[:1000]}...
-
-💡 **INSTRUCTIONS:**
-Answer the user's question based on the website content above. You MUST use HTML formatting as specified above. NEVER use markdown.
-
-Example format:
-<h2><strong>Website Analysis Title</strong></h2>
-<p>Your analysis paragraph here.</p>
-<p>1. <strong>First finding</strong> - explanation</p>
-<p>2. <strong>Second finding</strong> - explanation</p>
-<p><em>Important note</em> about the website.</p>"""
-            
             response = await get_openai_response(system_prompt, enhanced_user_message, memory_context)
-            
-            # Add to memory
             add_to_memory(session_id, user_message, response)
-            
-            # Convert any remaining markdown to HTML
             response = convert_markdown_to_html(response)
-            
             return ChatResponse(
                 response=response,
                 memory_summary=memory_context
